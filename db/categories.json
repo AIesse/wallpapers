@@ -1,0 +1,37 @@
+[
+  {
+    "key": "featured",
+    "name": "特色专区",
+    "sort": 0
+  },
+  {
+    "key": "landscape",
+    "name": "风景",
+    "sort": 1
+  },
+  {
+    "key": "city",
+    "name": "城市",
+    "sort": 2
+  },
+  {
+    "key": "abstract",
+    "name": "抽象",
+    "sort": 3
+  },
+  {
+    "key": "tech",
+    "name": "科技",
+    "sort": 4
+  },
+  {
+    "key": "anime",
+    "name": "动漫",
+    "sort": 5
+  },
+  {
+    "key": "minimal",
+    "name": "极简",
+    "sort": 6
+  }
+]
