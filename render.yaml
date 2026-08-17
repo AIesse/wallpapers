@@ -21,7 +21,7 @@ services:
       - key: GH_BRANCH
         value: main
       - key: CDN_BASE
-        value: https://wp.aiesse.me   # Cloudflare 代理后的域名（部署后改）
+        value: https://wp.aiesse.me   # 本服务对外域名（API 与图片同源；图片由 server 从 GitHub 代理，无需额外 CDN）
       - key: GH_TOKEN
         sync: false
       - key: ADMIN_PASSWORD

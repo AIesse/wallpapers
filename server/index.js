@@ -2,7 +2,7 @@
  * 壁纸小程序后端
  * - 数据库：GitHub 仓库中的 JSON 文件（db/*.json），通过 GitHub Contents API 读写，
  *   也可将 api.github.com 配置 Cloudflare Worker 反代以加速。
- * - 图片：本地 wallpapers/ 目录静态托管，由 Cloudflare 代理对外。
+ * - 图片：上传后存入 GitHub 仓库的 wallpapers/ 目录，由本服务按需代理分发（同源图床，无需额外 CDN；仓库需设为公开）。
  * - 特色专区：wallpaper.device = 'mobile' | 'desktop' | 'both'，
  *   同一张壁纸提供 mobile_file / desktop_file 两个版本。
  */
@@ -21,6 +21,12 @@ const GH_API = process.env.GH_API || 'https://api.github.com'; // 可替换为 C
 const GH_REPO = process.env.GH_REPO || 'owner/wallpaper-db';
 const GH_BRANCH = process.env.GH_BRANCH || 'main';
 const GH_TOKEN = process.env.GH_TOKEN || '';
+// 图片存于 GitHub 仓库 wallpapers/ 目录，由本服务按需代理分发（同源，小程序只需这一个图域）
+function assetUrl(file) {
+  if (!file) return '';
+  if (/^https?:\/\//.test(file)) return file;            // 已是完整 URL
+  return `${CDN_BASE}/wallpapers/${file}`;              // 本地或 GitHub 图片库，均经本服务
+}
 // 管理后台
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // 务必修改
 
@@ -32,28 +38,24 @@ const headers = {
   'X-GitHub-Api-Version': '2022-11-28',
 };
 
-async function ghGet(file) {
+// 通用：直接读写仓库内任意路径（图片也走这里，不限于 db/）
+async function ghGetContent(file) {
   try {
-    const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/db/${file}?ref=${GH_BRANCH}`, { headers });
+    const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${file}?ref=${GH_BRANCH}`, { headers });
     if (r.status === 404) return { sha: null, content: null };
     if (!r.ok) { console.warn(`ghGet ${file}: ${r.status}，降级为空数据`); return { sha: null, content: null }; }
     const j = await r.json();
-    return { sha: j.sha, content: JSON.parse(Buffer.from(j.content, 'base64').toString('utf8')) };
-  } catch (e) { // 网络异常等：不抛出，避免打挂进程；数据降级为默认值
+    return { sha: j.sha, content: j.content };
+  } catch (e) {
     console.warn(`ghGet ${file} network error: ${e.message}`);
     return { sha: null, content: null };
   }
 }
-
-async function ghPut(file, data, sha) {
-  const body = {
-    message: `db: update ${file} ${new Date().toISOString()}`,
-    branch: GH_BRANCH,
-    content: Buffer.from(JSON.stringify(data, null, 2)).toString('base64'),
-  };
+async function ghPutContent(file, base64Content, sha, message) {
+  const body = { message, branch: GH_BRANCH, content: base64Content };
   if (sha) body.sha = sha;
   try {
-    const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/db/${file}`, {
+    const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${file}`, {
       method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     if (!r.ok) { console.warn(`ghPut ${file}: ${r.status}（稍后写入会重试）`); return sha; }
@@ -63,6 +65,28 @@ async function ghPut(file, data, sha) {
     console.warn(`ghPut ${file} network error: ${e.message}`);
     return sha;
   }
+}
+async function ghDeleteContent(file, sha, message) {
+  try {
+    const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${file}`, {
+      method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, branch: GH_BRANCH, sha }),
+    });
+    return r.ok;
+  } catch (e) {
+    console.warn(`ghDelete ${file} network error: ${e.message}`);
+    return false;
+  }
+}
+// JSON 数据库（db/ 目录）便捷封装
+async function ghGet(file) {
+  const { sha, content } = await ghGetContent(`db/${file}`);
+  if (!content) return { sha, content: null };
+  try { return { sha, content: JSON.parse(Buffer.from(content, 'base64').toString('utf8')) }; }
+  catch { return { sha, content: null }; }
+}
+async function ghPut(file, data, sha) {
+  return ghPutContent(`db/${file}`, Buffer.from(JSON.stringify(data, null, 2)).toString('base64'), sha, `db: update ${file} ${new Date().toISOString()}`);
 }
 
 // 内存缓存 + 写队列（避免并发提交冲突）
@@ -110,6 +134,27 @@ process.on('uncaughtException', e => console.error('uncaughtException:', e && e.
 const app = express();
 app.use(express.json({ limit: '30mb' })); // 壁纸以 base64 上传，需放宽体积
 app.use('/wallpapers', express.static(path.join(__dirname, 'wallpapers'), { maxAge: '7d' }));
+
+// 图片代理：本地静态未命中时，从 GitHub 图片库拉取并流出（server 即图床，无需额外 CDN）
+const imgCache = new Map(); // name -> { buf, ct, ts }
+app.get('/wallpapers/*', async (req, res) => {
+  const name = req.params[0];
+  if (!name || name.includes('..')) return res.status(400).end();
+  if (!GH_TOKEN) return res.status(404).end();
+  try {
+    const hit = imgCache.get(name);
+    if (hit && Date.now() - hit.ts < 5 * 60 * 1000) {
+      return res.set('Content-Type', hit.ct).set('Cache-Control', 'public, max-age=86400').send(hit.buf);
+    }
+    const g = await ghGetContent(`wallpapers/${name}`);
+    if (!g.content) return res.status(404).end();
+    const buf = Buffer.from(g.content, 'base64');
+    const ext = path.extname(name).toLowerCase();
+    const ct = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }[ext] || 'application/octet-stream';
+    imgCache.set(name, { buf, ct, ts: Date.now() });
+    res.set('Content-Type', ct).set('Cache-Control', 'public, max-age=86400').send(buf);
+  } catch (e) { res.status(502).end(); }
+});
 
 const tokens = new Map(); // token -> userId
 function makeToken(userId) {
@@ -184,7 +229,7 @@ app.get('/api/wallpapers', async (req, res) => {
   const pageList = list.slice(start, start + +size).map(w => ({
     id: w.id, title: w.title, device: w.device, downloads: w.downloads,
     // 列表缩略图优先手机版
-    thumb: `${CDN_BASE}/wallpapers/${w.mobile_file || w.desktop_file}`,
+    thumb: assetUrl(w.mobile_file || w.desktop_file),
     has_mobile: !!w.mobile_file, has_desktop: !!w.desktop_file,
   }));
   res.json({ code: 0, data: { list: pageList, hasMore: start + pageList.length < list.length } });
@@ -197,8 +242,8 @@ app.get('/api/wallpapers/:id', async (req, res) => {
   if (!w) return res.json({ code: 404, msg: '壁纸不存在' });
   res.json({ code: 0, data: {
     id: w.id, title: w.title, category: w.category, device: w.device, downloads: w.downloads,
-    mobile_url: w.mobile_file ? `${CDN_BASE}/wallpapers/${w.mobile_file}` : '',
-    desktop_url: w.desktop_file ? `${CDN_BASE}/wallpapers/${w.desktop_file}` : '',
+    mobile_url: assetUrl(w.mobile_file),
+    desktop_url: assetUrl(w.desktop_file),
     has_mobile: !!w.mobile_file, has_desktop: !!w.desktop_file,
   } });
 });
@@ -226,7 +271,7 @@ app.post('/api/wallpapers/:id/download', auth, async (req, res) => {
   await save('users.json', () => {});
   await save('wallpapers.json', () => {});
   await save('downloads.json', () => {});
-  res.json({ code: 0, data: { url: `${CDN_BASE}/wallpapers/${file}`, points: u.points } });
+  res.json({ code: 0, data: { url: assetUrl(file), points: u.points } });
 });
 
 // ---------- 下载历史 ----------
@@ -236,7 +281,7 @@ app.get('/api/user/downloads', auth, async (req, res) => {
   const list = logs.data.filter(l => l.user_id === req.userId).slice(-100).reverse().map(l => {
     const w = wp.data.find(x => x.id === l.wallpaper_id) || {};
     return { id: l.wallpaper_id, title: w.title || '', device: l.device, created_at: l.created_at,
-      thumb: `${CDN_BASE}/wallpapers/${w.mobile_file || w.desktop_file || ''}` };
+      thumb: assetUrl(w.mobile_file || w.desktop_file) };
   });
   res.json({ code: 0, data: { list } });
 });
@@ -372,7 +417,12 @@ app.delete('/admin/api/wallpapers/:id', adminAuth, async (req, res) => {
   if (removeFiles) {
     for (const f of [w.mobile_file, w.desktop_file]) {
       if (!f) continue;
-      // 路径限定在 wallpapers 目录内，防止路径穿越
+      // GitHub 图片库删除（GH 存储的图以 basename 记录，本地兜底以 uploads/ 开头）
+      if (GH_TOKEN && !f.startsWith('uploads/') && !/^https?:\/\//.test(f)) {
+        const g = await ghGetContent(`wallpapers/${f}`);
+        if (g.sha) await ghDeleteContent(`wallpapers/${f}`, g.sha, `img: remove ${f}`);
+      }
+      // 本地文件兜底删除（路径限定在 wallpapers 目录内，防穿越）
       const p = path.normalize(path.join(__dirname, 'wallpapers', f));
       if (p.startsWith(path.join(__dirname, 'wallpapers')) && fs.existsSync(p)) fs.unlinkSync(p);
     }
@@ -381,7 +431,7 @@ app.delete('/admin/api/wallpapers/:id', adminAuth, async (req, res) => {
   res.json({ code: 0 });
 });
 
-// ---------- 图片上传（base64 JSON，保存到本地 wallpapers/uploads/） ----------
+// ---------- 图片上传（base64 JSON，存入 GitHub 图片库，本地仅作兜底） ----------
 app.post('/admin/api/upload', adminAuth, async (req, res) => {
   const { filename = '', data = '' } = req.body || {};
   const base64 = data.includes(',') ? data.split(',')[1] : data; // 兼容 dataURL
@@ -392,13 +442,21 @@ app.post('/admin/api/upload', adminAuth, async (req, res) => {
   const buf = Buffer.from(base64, 'base64');
   if (!buf.length) return res.json({ code: 400, msg: '文件内容为空' });
   if (buf.length > 15 * 1024 * 1024) return res.json({ code: 400, msg: '图片不能超过 15MB' });
-  const dir = path.join(__dirname, 'wallpapers', 'uploads');
-  fs.mkdirSync(dir, { recursive: true });
-  // 时间戳 + 随机串防文件名冲突
   const name = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
-  fs.writeFileSync(path.join(dir, name), buf);
-  await adminLog('上传图片', name);
-  res.json({ code: 0, data: { file: `uploads/${name}`, size: buf.length } });
+  // 本地兜底写入（开发 / 无 GH 时使用）
+  try {
+    const dir = path.join(__dirname, 'wallpapers', 'uploads');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, name), buf);
+  } catch (e) { /* 本地写入失败不致命 */ }
+  // 推送到 GitHub 图片库（wallpapers/ 目录，由本服务代理分发）
+  let file = `uploads/${name}`; // 默认走本地兜底路径
+  if (GH_TOKEN) {
+    const sha = await ghPutContent(`wallpapers/${name}`, base64, null, `img: add ${name} ${new Date().toISOString()}`);
+    if (sha) file = name; // 成功则改用 GitHub 图片库路径（basename）
+  }
+  await adminLog('上传图片', `${name} -> ${file}`);
+  res.json({ code: 0, data: { file, size: buf.length, github: !file.startsWith('uploads/') } });
 });
 
 // ---------- 分类管理 ----------
