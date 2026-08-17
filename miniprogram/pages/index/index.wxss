@@ -1,0 +1,47 @@
+.page { padding: 0 24rpx 40rpx; background: #000000; }
+
+/* 分类横滑 */
+.cats { position: sticky; top: calc(env(safe-area-inset-top) + 88rpx); z-index: 99;
+  background: rgba(0, 0, 0, 0.28); border-bottom: 1rpx solid rgba(255,255,255,0.06);
+  -webkit-backdrop-filter: blur(20rpx) saturate(180%); backdrop-filter: blur(20rpx) saturate(180%); }
+.cats__inner { display: flex; padding: 20rpx 8rpx; gap: 20rpx; }
+.cats__item {
+  flex-shrink: 0; padding: 12rpx 34rpx; border-radius: 999rpx;
+  font-size: 26rpx; color: var(--text-sub);
+  border: 1rpx solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05);
+  transition: all 0.25s ease;
+}
+/* 分类同色发光圆点（多彩主题点缀） */
+.cats__item::before {
+  content: ''; width: 12rpx; height: 12rpx; border-radius: 50%;
+  background: var(--cat, #888); box-shadow: 0 0 12rpx var(--cat, #888);
+  display: inline-block; margin-right: 12rpx; vertical-align: middle; opacity: 0.8;
+}
+.cats__item--on {
+  color: #fff; font-weight: 600;
+  background: var(--aurora); border-color: transparent;
+  box-shadow: 0 6rpx 24rpx rgba(120, 119, 198, 0.35);
+}
+
+/* 特色专区设备筛选 */
+.device { padding: 8rpx 4rpx 20rpx; }
+.device__tip { font-size: 22rpx; color: var(--gold); letter-spacing: 2rpx; opacity: 0.85; margin-bottom: 16rpx; }
+.device__tabs { display: flex; gap: 16rpx; }
+.device__tab {
+  flex: 1; text-align: center; padding: 14rpx 0; border-radius: 16rpx;
+  font-size: 24rpx; color: var(--text-sub);
+  background: rgba(255,255,255,0.05); border: 1rpx solid rgba(255,255,255,0.08);
+}
+.device__tab--on { color: #fff; border-color: transparent; background: var(--aurora); }
+
+/* 瀑布流 */
+.falls { display: flex; gap: 20rpx; }
+.falls__col { flex: 1; display: flex; flex-direction: column; gap: 20rpx; }
+.falls__item { overflow: hidden; }
+.falls__img { width: 100%; display: block; background: rgba(255,255,255,0.04); }
+.falls__meta { padding: 16rpx 20rpx 20rpx; display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.falls__title { font-size: 24rpx; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.falls__badge {
+  flex-shrink: 0; font-size: 20rpx; color: var(--text-sub);
+  border: 1rpx solid var(--line); border-radius: 8rpx; padding: 4rpx 10rpx;
+}

@@ -1,0 +1,55 @@
+<view class="page">
+  <!-- 自定义导航 -->
+  <view class="nav" style="padding-top:{{statusBarHeight}}px;">
+    <view class="nav__title">我<em>的</em></view>
+  </view>
+
+  <!-- 用户卡：微信官方静默登录 -->
+  <view class="profile card">
+    <view class="profile__avatar">
+      <image wx:if="{{user && user.avatar}}" src="{{user.avatar}}" class="profile__img" />
+      <view wx:else class="profile__img profile__img--ph">✦</view>
+    </view>
+    <view class="profile__info">
+      <view class="profile__name">{{user && user.nickname ? user.nickname : '微信用户'}}</view>
+      <view class="profile__sub">微信官方授权登录</view>
+    </view>
+    <view class="profile__points">
+      <view class="profile__num">{{user ? user.points : '-'}}</view>
+      <view class="profile__label">积分</view>
+    </view>
+  </view>
+
+  <!-- 签到卡 -->
+  <view class="checkin card">
+    <view class="checkin__left">
+      <view class="checkin__title">每日签到</view>
+      <view class="checkin__sub">签到 +1 积分 · 下载壁纸 -1 积分</view>
+    </view>
+    <button class="{{checkedIn ? 'btn-ghost btn-disabled' : 'btn-gold'}} checkin__btn"
+            disabled="{{checkedIn}}" bindtap="onCheckin">
+      {{checkedIn ? '今日已签到' : '立即签到 +1'}}
+    </button>
+  </view>
+
+  <!-- banner 广告位（官方流量主） -->
+  <view wx:if="{{adUnitBanner}}" class="ad card">
+    <ad unit-id="{{adUnitBanner}}" ad-intervals="30" />
+  </view>
+
+  <!-- 下载历史 -->
+  <view class="section">
+    <view class="section__title">下载历史</view>
+    <view wx:if="{{!history.length && !loading}}" class="empty">暂无下载记录 · 精美壁纸等你探索</view>
+    <view class="history">
+      <view wx:for="{{history}}" wx:key="index" class="card history__item"
+            data-id="{{item.id}}" bindtap="onItemTap">
+        <image class="history__img" src="{{item.thumb}}" mode="aspectFill" lazy-load />
+        <view class="history__meta">
+          <text class="history__name">{{item.title || '未命名壁纸'}}</text>
+          <text class="history__time">{{item.device === 'desktop' ? '电脑版' : '手机版'}} · {{item.created_at}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,19 @@
+# ===== 依赖 =====
+node_modules/
+server/node_modules/
+
+# ===== 密钥 / 本地配置（绝不提交） =====
+.env
+server/.env
+
+# ===== 日志 =====
+*.log
+
+# ===== 运行时上传目录（容器重启会丢，属临时文件） =====
+server/wallpapers/
+
+# ===== 本地记忆 / 工具目录 =====
+.workbuddy/
+
+# ===== 系统文件 =====
+.DS_Store

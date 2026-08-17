@@ -1,0 +1,14 @@
+services:
+  wallpaper-server:
+    build: .
+    container_name: wallpaper-server
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/admin/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

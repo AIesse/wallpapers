@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>壁纸精选 · 管理后台</title>
+<style>
+  :root {
+    --bg: #0b0d12; --card: #141821; --card-hover: #1b202c;
+    --gold: #d4b483; --gold-grad: linear-gradient(135deg, #e8cfa5, #d4b483 45%, #b9965f);
+    --text: #eef1f6; --sub: #8b93a7; --line: rgba(212,180,131,.14);
+    --danger: #d47b6a; --ok: #7bc4a0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.6 -apple-system, "PingFang SC", sans-serif; }
+  button { cursor: pointer; border: none; border-radius: 8px; font-size: 13px; padding: 8px 16px; }
+  input, select, textarea {
+    background: #0f1219; color: var(--text); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px; padding: 9px 12px; font-size: 14px; width: 100%;
+  }
+  textarea { resize: vertical; min-height: 90px; }
+  label { display: block; font-size: 12px; color: var(--sub); margin: 14px 0 6px; }
+
+  /* 登录层 */
+  #login { position: fixed; inset: 0; z-index: 999; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; }
+  #login.hide { display: none; }
+  .login-box { width: 360px; padding: 40px 36px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 20px; }
+  .login-box h1 { font-size: 20px; text-align: center; letter-spacing: 6px; margin-bottom: 6px; }
+  .login-box h1 em { font-style: normal; background: var(--gold-grad);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .login-box p { text-align: center; color: var(--sub); font-size: 12px; margin-bottom: 20px; }
+
+  /* 布局 */
+  #app { display: none; }
+  #app.on { display: flex; min-height: 100vh; }
+  aside { width: 210px; flex-shrink: 0; padding: 28px 16px; border-right: 1px solid var(--line);
+    background: #0d1017; position: sticky; top: 0; height: 100vh; }
+  .logo { font-size: 17px; letter-spacing: 4px; padding: 0 12px 26px; }
+  .logo em { font-style: normal; background: var(--gold-grad); -webkit-background-clip: text; color: transparent; }
+  nav a { display: block; padding: 11px 14px; border-radius: 10px; color: var(--sub);
+    text-decoration: none; margin-bottom: 4px; transition: all .2s; }
+  nav a.on, nav a:hover { color: var(--gold); background: rgba(212,180,131,.08); }
+  main { flex: 1; padding: 30px 36px; max-width: 1200px; }
+  h2 { font-size: 19px; margin-bottom: 22px; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
+  h2::before { content: ''; width: 5px; height: 20px; background: var(--gold-grad); border-radius: 3px; }
+
+  .btn-gold { background: var(--gold-grad); color: #1a1408; font-weight: 600; }
+  .btn-ghost { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+  .btn-sub { background: #1e2330; color: var(--text); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .toolbar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .toolbar input, .toolbar select { width: auto; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .stat .n { font-size: 30px; font-weight: 700; background: var(--gold-grad);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat .t { font-size: 12px; color: var(--sub); margin-top: 4px; letter-spacing: 2px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card);
+    border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  th, td { padding: 12px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  th { color: var(--sub); font-weight: 500; background: rgba(255,255,255,.02); }
+  tr:last-child td { border-bottom: none; }
+  td img { width: 44px; height: 60px; object-fit: cover; border-radius: 6px; background: #1b202c; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 11px;
+    border: 1px solid var(--line); color: var(--gold); }
+  .tag.gray { color: var(--sub); border-color: rgba(255,255,255,.1); }
+  .tag.ok { color: var(--ok); border-color: rgba(123,196,160,.3); }
+  .tag.off { color: var(--danger); border-color: rgba(212,123,106,.3); }
+  .empty { text-align: center; color: var(--sub); padding: 50px 0; }
+  .pager { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; align-items: center; color: var(--sub); font-size: 12px; }
+
+  /* 弹窗 */
+  #modal { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.6);
+    display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  #modal.on { display: flex; }
+  .modal-box { width: 520px; max-width: 94vw; max-height: 88vh; overflow-y: auto;
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 28px; }
+  .modal-box h3 { font-size: 16px; margin-bottom: 4px; }
+  .modal-foot { display: flex; gap: 12px; justify-content: flex-end; margin-top: 22px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .upload-hint { font-size: 11px; color: var(--sub); margin-top: 4px; }
+  .cur-file { font-size: 12px; color: var(--ok); margin-top: 4px; word-break: break-all; }
+  .err { color: var(--danger); font-size: 12px; margin-top: 10px; min-height: 16px; }
+  .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: #1e2330; border: 1px solid var(--line); color: var(--text);
+    padding: 10px 22px; border-radius: 10px; z-index: 1000; display: none; }
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login">
+  <form class="login-box" onsubmit="return doLogin(event)">
+    <h1>壁纸<em>精选</em></h1>
+    <p>WALLPAPER ADMIN CONSOLE</p>
+    <label>管理员密码</label>
+    <input type="password" id="pwd" placeholder="请输入 ADMIN_PASSWORD" required>
+    <div class="err" id="login-err"></div>
+    <button class="btn-gold" style="width:100%;padding:11px;margin-top:8px">登 录</button>
+  </form>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="logo">壁纸<em>后台</em></div>
+    <nav>
+      <a data-view="dash" class="on">📊 仪表盘</a>
+      <a data-view="wallpapers">🖼 壁纸管理</a>
+      <a data-view="categories">🗂 分类管理</a>
+      <a data-view="messages">📢 消息公告</a>
+      <a data-view="users">👤 用户管理</a>
+      <a data-view="downloads">📥 下载记录</a>
+      <a data-view="logs">📝 操作日志</a>
+      <a href="javascript:void(0)" onclick="logout()" style="margin-top:20px;color:var(--danger)">⏻ 退出登录</a>
+    </nav>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<!-- 通用弹窗 -->
+<div id="modal"><div class="modal-box">
+  <h3 id="m-title"></h3><div id="m-body"></div>
+  <div class="modal-foot">
+    <button class="btn-sub" onclick="closeModal()">取消</button>
+    <button class="btn-gold" id="m-ok">确定</button>
+  </div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let token = sessionStorage.getItem('admin_token') || '';
+let catsCache = [];
+let wpPage = 1, dlPage = 1, userPage = 1;
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 2200);
+}
+async function api(path, method = 'GET', body) {
+  const r = await fetch(path, {
+    method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (r.status === 401) { $('#login').classList.remove('hide'); throw new Error('未登录'); }
+  return r.json();
+}
+async function doLogin(e) {
+  e.preventDefault();
+  const r = await fetch('/admin/api/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: $('#pwd').value }),
+  }).then(x => x.json());
+  if (r.code === 0) {
+    token = r.data.token; sessionStorage.setItem('admin_token', token);
+    $('#login').classList.add('hide'); $('#app').classList.add('on'); refreshCats(); showView('dash');
+  } else $('#login-err').textContent = r.msg || '登录失败';
+  return false;
+}
+function logout() { sessionStorage.removeItem('admin_token'); location.reload(); }
+
+document.querySelectorAll('nav a[data-view]').forEach(a =>
+  a.onclick = () => showView(a.dataset.view));
+function showView(v) {
+  document.querySelectorAll('nav a').forEach(x => x.classList.toggle('on', x.dataset.view === v));
+  ({ dash: viewDash, wallpapers: viewWallpapers, categories: viewCategories,
+     messages: viewMessages, users: viewUsers, downloads: viewDownloads, logs: viewLogs })[v]();
+}
+
+// ---------- 通用弹窗 ----------
+function openModal(title, bodyHtml, onOk) {
+  $('#m-title').textContent = title; $('#m-body').innerHTML = bodyHtml;
+  $('#m-ok').onclick = onOk; $('#modal').classList.add('on');
+}
+function closeModal() { $('#modal').classList.remove('on'); }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+async function refreshCats() {
+  const r = await api('/admin/api/categories'); catsCache = r.data || [];
+}
+const catName = k => (catsCache.find(c => c.key === k) || {}).name || k;
+const devName = d => ({ mobile: '仅手机', desktop: '仅电脑', both: '手机+电脑' })[d] || d;
+
+// ---------- 仪表盘 ----------
+async function viewDash() {
+  const r = await api('/admin/api/stats');
+  if (r.code !== 0) return;
+  const d = r.data;
+  $('#main').innerHTML = `
+    <h2>仪表盘</h2>
+    <div class="cards">
+      <div class="stat"><div class="n">${d.users}</div><div class="t">注册用户</div></div>
+      <div class="stat"><div class="n">${d.wallpapers}</div><div class="t">壁纸总数</div></div>
+      <div class="stat"><div class="n">${d.downloads}</div><div class="t">累计下载</div></div>
+      <div class="stat"><div class="n">${d.todayCheckins}</div><div class="t">今日签到</div></div>
+      <div class="stat"><div class="n">${d.activeMessages}</div><div class="t">启用中公告</div></div>
+    </div>
+    <h2 style="font-size:15px">最近操作</h2>
+    <table><tr><th>时间</th><th>操作</th><th>详情</th></tr>
+    ${d.recentLogs.map(l => `<tr><td>${(l.created_at || '').replace('T', ' ').slice(0, 19)}</td>
+      <td><span class="tag">${l.action}</span></td><td>${l.detail}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">暂无记录</td></tr>'}
+    </table>`;
+}
+
+// ---------- 壁纸管理 ----------
+let wpFilter = { keyword: '', category: '' };
+async function viewWallpapers() {
+  await refreshCats();
+  $('#main').innerHTML = `
+    <h2>壁纸管理</h2>
+    <div class="toolbar">
+      <input id="w-kw" placeholder="搜索标题" value="${wpFilter.keyword}">
+      <select id="w-cat"><option value="">全部分类</option>
+        ${catsCache.map(c => `<option value="${c.key}" ${wpFilter.category === c.key ? 'selected' : ''}>${c.name}</option>`).join('')}
+      </select>
+      <button class="btn-sub" onclick="wpFilter={keyword:$('#w-kw').value,category:$('#w-cat').value};wpPage=1;viewWallpapers()">筛选</button>
+      <button class="btn-gold" onclick="wallpaperForm()">＋ 新增壁纸</button>
+    </div>
+    <div id="wp-list"></div>
+    <div class="pager" id="wp-pager"></div>`;
+  const q = new URLSearchParams({ keyword: wpFilter.keyword, category: wpFilter.category, page: wpPage, size: 15 });
+  const r = await api('/admin/api/wallpapers?' + q);
+  if (r.code !== 0) return;
+  $('#wp-list').innerHTML = r.data.list.length ? `<table>
+    <tr><th>预览</th><th>ID</th><th>标题</th><th>分类</th><th>版本</th><th>下载</th><th>操作</th></tr>
+    ${r.data.list.map(w => `<tr>
+      <td><img src="/wallpapers/${w.mobile_file || w.desktop_file}" loading="lazy"></td>
+      <td>${w.id}</td><td>${w.title}</td>
+      <td><span class="tag">${catName(w.category)}</span></td>
+      <td><span class="tag ${w.device === 'both' ? '' : 'gray'}">${devName(w.device)}</span></td>
+      <td>${w.downloads || 0}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-sub" onclick="wallpaperForm(${w.id})">编辑</button>
+        <button class="btn-danger" onclick="delWallpaper(${w.id},'${w.title.replace(/'/g, '')}')">删除</button>
+      </td></tr>`).join('')}</table>`
+    : '<div class="empty">暂无壁纸，点击右上角新增</div>';
+  pager('#wp-pager', wpPage, Math.ceil(r.data.total / 15), p => { wpPage = p; viewWallpapers(); });
+}
+function pager(sel, page, pages, go) {
+  $(sel).innerHTML = `共 ${pages} 页
+    <button class="btn-sub" ${page <= 1 ? 'disabled' : ''} onclick="void 0" id="${sel.slice(1)}-prev">上一页</button>
+    <span>${page} / ${Math.max(pages, 1)}</span>
+    <button class="btn-sub" ${page >= pages ? 'disabled' : ''} id="${sel.slice(1)}-next">下一页</button>`;
+  const prev = $(sel + '-prev'), next = $(sel + '-next');
+  if (prev) prev.onclick = () => go(page - 1);
+  if (next) next.onclick = () => go(page + 1);
+}
+
+// 文件选择 → base64
+function readAsBase64(input) {
+  return new Promise((resolve, reject) => {
+    const f = input.files[0];
+    if (!f) return resolve(null);
+    const fr = new FileReader();
+    fr.onload = () => resolve({ filename: f.name, data: fr.result });
+    fr.onerror = reject;
+    fr.readAsDataURL(f);
+  });
+}
+async function uploadInput(id) {
+  const up = await readAsBase64($('#' + id));
+  if (!up) return null;
+  const r = await api('/admin/api/upload', 'POST', up);
+  if (r.code !== 0) { toast(r.msg); throw new Error(r.msg); }
+  return r.data.file;
+}
+
+function wallpaperForm(id) {
+  const isEdit = !!id;
+  openModal(isEdit ? `编辑壁纸 #${id}` : '新增壁纸', `
+    <label>标题</label><input id="f-title" placeholder="如：极光之夜">
+    <div class="row2">
+      <div><label>分类</label><select id="f-cat">
+        ${catsCache.map(c => `<option value="${c.key}">${c.name}</option>`).join('')}</select></div>
+      <div><label>设备版本</label><select id="f-device">
+        <option value="both">手机 + 电脑（特色专区推荐）</option>
+        <option value="mobile">仅手机版</option>
+        <option value="desktop">仅电脑版</option></select></div>
+    </div>
+    <label>手机版图片（竖屏）</label><input type="file" id="f-mobile" accept=".jpg,.jpeg,.png,.webp">
+    <div id="f-mobile-cur"></div>
+    <label>电脑版图片（横屏）</label><input type="file" id="f-desktop" accept=".jpg,.jpeg,.png,.webp">
+    <div id="f-desktop-cur"></div>
+    <div class="upload-hint">jpg / png / webp，单个不超过 15MB；编辑时不重新上传则保留原图</div>
+    <div class="err" id="f-err"></div>`, async () => {
+    try {
+      const [mobile, desktop] = await Promise.all([uploadInput('f-mobile'), uploadInput('f-desktop')]);
+      const body = {
+        title: $('#f-title').value, category: $('#f-cat').value, device: $('#f-device').value,
+      };
+      if (isEdit) {
+        const cur = wallpaperForm._cur || {};
+        body.mobile_file = mobile || cur.mobile_file || '';
+        body.desktop_file = desktop || cur.desktop_file || '';
+        const r = await api(`/admin/api/wallpapers/${id}`, 'PUT', body);
+        if (r.code !== 0) return $('#f-err').textContent = r.msg;
+        toast('已保存');
+      } else {
+        body.mobile_file = mobile || ''; body.desktop_file = desktop || '';
+        const r = await api('/admin/api/wallpapers', 'POST', body);
+        if (r.code !== 0) return $('#f-err').textContent = r.msg;
+        toast('已新增');
+      }
+      closeModal(); viewWallpapers();
+    } catch (e) { /* 上传错误已 toast */ }
+  });
+  if (isEdit) {
+    api('/admin/api/wallpapers?size=1000&page=1').then(r => {
+      const w = r.data.list.find(x => x.id === id);
+      if (!w) return;
+      wallpaperForm._cur = w;
+      $('#f-title').value = w.title; $('#f-cat').value = w.category; $('#f-device').value = w.device;
+      if (w.mobile_file) $('#f-mobile-cur').innerHTML = `<div class="cur-file">当前：${w.mobile_file}</div>`;
+      if (w.desktop_file) $('#f-desktop-cur').innerHTML = `<div class="cur-file">当前：${w.desktop_file}</div>`;
+    });
+  }
+}
+function delWallpaper(id, title) {
+  openModal('删除壁纸', `确定删除「${title}」吗？
+    <label style="display:flex;gap:8px;align-items:center;margin-top:16px">
+      <input type="checkbox" id="del-files" style="width:auto">同时删除服务器上的图片文件</label>
+    <div class="upload-hint">不勾选则仅移除记录，图片文件保留在服务器</div>`, async () => {
+    const r = await api(`/admin/api/wallpapers/${id}?removeFiles=${$('#del-files').checked}`, 'DELETE');
+    toast(r.code === 0 ? '已删除' : r.msg);
+    closeModal(); viewWallpapers();
+  });
+}
+
+// ---------- 分类管理 ----------
+async function viewCategories() {
+  await refreshCats();
+  $('#main').innerHTML = `
+    <h2>分类管理</h2>
+    <div class="toolbar"><button class="btn-gold" onclick="catForm()">＋ 新增分类</button></div>
+    <table><tr><th>key</th><th>名称</th><th>排序</th><th>操作</th></tr>
+    ${catsCache.map(c => `<tr><td><span class="tag gray">${c.key}</span></td><td>${c.name}</td><td>${c.sort}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-sub" onclick="catForm('${c.key}')">编辑</button>
+        <button class="btn-danger" onclick="delCat('${c.key}','${c.name}')">删除</button>
+      </td></tr>`).join('')}</table>`;
+}
+function catForm(key) {
+  const c = catsCache.find(x => x.key === key);
+  openModal(c ? '编辑分类' : '新增分类', `
+    <label>key（唯一标识，创建后不可改）</label>
+    <input id="c-key" placeholder="如 nature" ${c ? 'disabled' : ''} value="${c ? c.key : ''}">
+    <label>名称</label><input id="c-name" value="${c ? c.name : ''}" placeholder="如 自然风光">
+    <label>排序（越小越靠前）</label><input id="c-sort" type="number" value="${c ? c.sort : 99}">
+    <div class="err" id="c-err"></div>`, async () => {
+    const body = { name: $('#c-name').value, sort: +$('#c-sort').value || 99 };
+    const r = c ? await api(`/admin/api/categories/${key}`, 'PUT', body)
+               : await api('/admin/api/categories', 'POST', { ...body, key: $('#c-key').value.trim() });
+    if (r.code !== 0) return $('#c-err').textContent = r.msg;
+    toast('已保存'); closeModal(); viewCategories();
+  });
+}
+function delCat(key, name) {
+  openModal('删除分类', `确定删除分类「${name}」吗？分类下仍有壁纸时将无法删除。`, async () => {
+    const r = await api(`/admin/api/categories/${key}`, 'DELETE');
+    toast(r.code === 0 ? '已删除' : r.msg);
+    closeModal(); viewCategories();
+  });
+}
+
+// ---------- 消息公告 ----------
+async function viewMessages() {
+  const r = await api('/admin/api/messages');
+  if (r.code !== 0) return;
+  $('#main').innerHTML = `
+    <h2>消息公告（小程序启动弹窗）</h2>
+    <div class="toolbar"><button class="btn-gold" onclick="msgForm()">＋ 发布公告</button></div>
+    ${r.data.length ? `<table>
+    <tr><th>ID</th><th>标题</th><th>频次</th><th>生效区间</th><th>状态</th><th>操作</th></tr>
+    ${r.data.map(m => `<tr><td>${m.id}</td>
+      <td title="${(m.content || '').replace(/"/g, '')}">${m.title}</td>
+      <td><span class="tag gray">${({ once: '仅弹一次', daily: '每日一次', always: '每次启动' })[m.frequency]}</span></td>
+      <td style="font-size:12px">${(m.start_at || '不限').slice(0, 16)} ~ ${(m.end_at || '不限').slice(0, 16)}</td>
+      <td><span class="tag ${m.enabled ? 'ok' : 'off'}">${m.enabled ? '启用' : '停用'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn-sub" onclick="toggleMsg(${m.id},${!m.enabled})">${m.enabled ? '停用' : '启用'}</button>
+        <button class="btn-sub" onclick="msgForm(${m.id})">编辑</button>
+        <button class="btn-danger" onclick="delMsg(${m.id},'${m.title.replace(/'/g, '')}')">删除</button>
+      </td></tr>`).join('')}</table>` : '<div class="empty">暂无公告</div>'}`;
+  msgForm._list = r.data;
+}
+function msgForm(id) {
+  const m = (msgForm._list || []).find(x => x.id === id);
+  openModal(m ? `编辑公告 #${id}` : '发布公告', `
+    <label>标题</label><input id="g-title" value="${m ? m.title : ''}" placeholder="如：新壁纸上架">
+    <label>内容（弹窗正文）</label><textarea id="g-content">${m ? m.content : ''}</textarea>
+    <label>跳转链接（可选，小程序内页面路径，如 /pages/index/index）</label>
+    <input id="g-link" value="${m ? m.link || '' : ''}" placeholder="/pages/index/index">
+    <label>弹出频次</label><select id="g-freq">
+      <option value="once" ${m && m.frequency === 'once' ? 'selected' : ''}>仅弹一次（用户看过即不再弹）</option>
+      <option value="daily" ${m && m.frequency === 'daily' ? 'selected' : ''}>每日弹一次</option>
+      <option value="always" ${m && m.frequency === 'always' ? 'selected' : ''}>每次启动都弹</option></select>
+    <div class="row2">
+      <div><label>开始时间（可选）</label><input type="datetime-local" id="g-start" value="${m ? (m.start_at || '').slice(0, 16) : ''}"></div>
+      <div><label>结束时间（可选）</label><input type="datetime-local" id="g-end" value="${m ? (m.end_at || '').slice(0, 16) : ''}"></div>
+    </div>
+    <div class="upload-hint">启用状态：新建默认启用；同一时刻小程序只展示最新一条生效中的公告</div>
+    <div class="err" id="g-err"></div>`, async () => {
+    const body = {
+      title: $('#g-title').value, content: $('#g-content').value, link: $('#g-link').value.trim(),
+      frequency: $('#g-freq').value,
+      start_at: $('#g-start').value ? new Date($('#g-start').value).toISOString() : '',
+      end_at: $('#g-end').value ? new Date($('#g-end').value).toISOString() : '',
+    };
+    const r = m ? await api(`/admin/api/messages/${id}`, 'PUT', body)
+               : await api('/admin/api/messages', 'POST', body);
+    if (r.code !== 0) return $('#g-err').textContent = r.msg;
+    toast('已保存'); closeModal(); viewMessages();
+  });
+}
+async function toggleMsg(id, enabled) {
+  const r = await api(`/admin/api/messages/${id}`, 'PUT', { enabled });
+  toast(r.code === 0 ? '已更新' : r.msg); viewMessages();
+}
+function delMsg(id, title) {
+  openModal('删除公告', `确定删除公告「${title}」吗？`, async () => {
+    const r = await api(`/admin/api/messages/${id}`, 'DELETE');
+    toast(r.code === 0 ? '已删除' : r.msg); closeModal(); viewMessages();
+  });
+}
+
+// ---------- 用户管理 ----------
+async function viewUsers() {
+  let keyword = viewUsers._kw || '';
+  const q = new URLSearchParams({ keyword, page: userPage, size: 15 });
+  const r = await api('/admin/api/users?' + q);
+  if (r.code !== 0) return;
+  $('#main').innerHTML = `
+    <h2>用户管理</h2>
+    <div class="toolbar">
+      <input id="u-kw" placeholder="按 ID 或昵称搜索" value="${keyword}">
+      <button class="btn-sub" onclick="viewUsers._kw=$('#u-kw').value;userPage=1;viewUsers()">搜索</button>
+    </div>
+    <table><tr><th>ID</th><th>openid</th><th>昵称</th><th>积分</th><th>最近签到</th><th>注册</th><th>操作</th></tr>
+    ${r.data.list.map(u => `<tr><td>${u.id}</td><td style="font-size:12px">${u.openid}</td>
+      <td>${u.nickname}</td><td><span class="tag">${u.points}</span></td>
+      <td>${u.last_checkin || '-'}</td><td>${u.created_at}</td>
+      <td><button class="btn-sub" onclick="adjustPoints(${u.id},${u.points})">调整积分</button></td></tr>`).join('')
+      || '<tr><td colspan="7" class="empty">暂无用户</td></tr>'}</table>
+    <div class="pager" id="u-pager"></div>`;
+  pager('#u-pager', userPage, Math.ceil(r.data.total / 15), p => { userPage = p; viewUsers(); });
+}
+function adjustPoints(id, current) {
+  openModal(`调整积分（用户 #${id}，当前 ${current} 分）`, `
+    <label>变更值（正数增加 / 负数扣减，非零整数）</label>
+    <input id="p-delta" type="number" placeholder="如 5 或 -3">
+    <label>原因（记录到操作日志）</label>
+    <input id="p-reason" placeholder="如：活动奖励">
+    <div class="err" id="p-err"></div>`, async () => {
+    const r = await api(`/admin/api/users/${id}/points`, 'POST',
+      { delta: +$('#p-delta').value, reason: $('#p-reason').value.trim() });
+    if (r.code !== 0) return $('#p-err').textContent = r.msg;
+    toast('已调整，当前 ' + r.data.points + ' 分'); closeModal(); viewUsers();
+  });
+}
+
+// ---------- 下载记录 ----------
+async function viewDownloads() {
+  const q = new URLSearchParams({ page: dlPage, size: 20 });
+  const r = await api('/admin/api/downloads?' + q);
+  if (r.code !== 0) return;
+  $('#main').innerHTML = `
+    <h2>下载记录</h2>
+    ${r.data.list.length ? `<table><tr><th>时间</th><th>用户</th><th>壁纸</th><th>版本</th></tr>
+    ${r.data.list.map(l => `<tr>
+      <td style="font-size:12px">${(l.created_at || '').replace('T', ' ').slice(0, 19)}</td>
+      <td>#${l.user_id}</td><td>${l.title}</td>
+      <td><span class="tag ${l.device === 'desktop' ? 'gray' : ''}">${l.device === 'desktop' ? '电脑版' : '手机版'}</span></td>
+      </tr>`).join('')}</table>` : '<div class="empty">暂无下载</div>'}
+    <div class="pager" id="d-pager"></div>`;
+  pager('#d-pager', dlPage, Math.ceil(r.data.total / 20), p => { dlPage = p; viewDownloads(); });
+}
+
+// ---------- 操作日志 ----------
+async function viewLogs() {
+  const r = await api('/admin/api/logs');
+  if (r.code !== 0) return;
+  $('#main').innerHTML = `
+    <h2>管理员操作日志</h2>
+    ${r.data.length ? `<table><tr><th>时间</th><th>操作</th><th>详情</th></tr>
+    ${r.data.map(l => `<tr>
+      <td style="font-size:12px">${(l.created_at || '').replace('T', ' ').slice(0, 19)}</td>
+      <td><span class="tag">${l.action}</span></td><td>${l.detail}</td></tr>`).join('')}</table>`
+      : '<div class="empty">暂无日志</div>'}`;
+}
+
+// ---------- 启动 ----------
+if (token) {
+  api('/admin/api/stats').then(r => {
+    if (r.code === 0) {
+      $('#login').classList.add('hide'); $('#app').classList.add('on');
+      refreshCats(); showView('dash');
+    }
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>

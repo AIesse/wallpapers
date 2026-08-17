@@ -1,0 +1,56 @@
+<view class="page">
+  <!-- 自定义导航 -->
+  <view class="nav" style="padding-top:{{statusBarHeight}}px;">
+    <view class="nav__title">壁<em>纸</em>精选</view>
+  </view>
+
+  <!-- 分类横滑 -->
+  <scroll-view class="cats" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="cats__inner">
+      <view wx:for="{{categories}}" wx:key="key"
+            class="cats__item {{currentCat === item.key ? 'cats__item--on' : ''}}"
+            style="--cat:{{item.color}}"
+            data-key="{{item.key}}" bindtap="onCatTap">{{item.name}}</view>
+    </view>
+  </scroll-view>
+
+  <!-- 特色专区：多端设备筛选（手机版 / 电脑版） -->
+  <view wx:if="{{showDeviceFilter}}" class="device">
+    <view class="device__tip">多端壁纸专区 · 同步提供手机与电脑高清版本</view>
+    <view class="device__tabs">
+      <view class="device__tab {{deviceFilter === 'all' ? 'device__tab--on' : ''}}" data-device="all" bindtap="onDeviceTap">全部</view>
+      <view class="device__tab {{deviceFilter === 'mobile' ? 'device__tab--on' : ''}}" data-device="mobile" bindtap="onDeviceTap">📱 手机版</view>
+      <view class="device__tab {{deviceFilter === 'desktop' ? 'device__tab--on' : ''}}" data-device="desktop" bindtap="onDeviceTap">🖥 电脑版</view>
+    </view>
+  </view>
+
+  <!-- 双列瀑布流 -->
+  <view class="falls">
+    <view class="falls__col">
+      <view wx:for="{{left}}" wx:key="id" class="card falls__item" data-id="{{item.id}}" bindtap="onItemTap">
+        <image class="falls__img" src="{{item.thumb}}" mode="widthFix" lazy-load />
+        <view class="falls__meta">
+          <text class="falls__title">{{item.title}}</text>
+          <text wx:if="{{currentCat === 'featured'}}" class="falls__badge">
+            {{item.has_mobile && item.has_desktop ? '手机+电脑' : (item.has_mobile ? '手机' : '电脑')}}
+          </text>
+        </view>
+      </view>
+    </view>
+    <view class="falls__col">
+      <view wx:for="{{right}}" wx:key="id" class="card falls__item" data-id="{{item.id}}" bindtap="onItemTap">
+        <image class="falls__img" src="{{item.thumb}}" mode="widthFix" lazy-load />
+        <view class="falls__meta">
+          <text class="falls__title">{{item.title}}</text>
+          <text wx:if="{{currentCat === 'featured'}}" class="falls__badge">
+            {{item.has_mobile && item.has_desktop ? '手机+电脑' : (item.has_mobile ? '手机' : '电脑')}}
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && !left.length && !right.length}}" class="empty">该分类暂无壁纸 · 敬请期待</view>
+  <view wx:if="{{loading}}" class="empty">加载中…</view>
+  <view wx:if="{{!hasMore && left.length}}" class="empty">— 已到尽头 —</view>
+</view>

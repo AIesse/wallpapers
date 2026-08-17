@@ -1,0 +1,32 @@
+# Render Blueprint —— 壁纸小程序后端一键部署
+# 用法：在 Render 新建 Web Service 时选择本仓库，Render 会自动读取此文件。
+# 注意：GH_TOKEN / ADMIN_PASSWORD / WX_APPID / WX_SECRET 为密钥，sync:false 表示
+#       必须在 Render 后台手动填写（不要写进仓库，已在 .gitignore 排除 .env）。
+services:
+  - type: web
+    name: wallpaper-server
+    runtime: node
+    rootDir: server          # 仅构建 server/ 子目录
+    plan: free               # 免费档（会休眠，生产可升级）
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /admin  # 管理后台页面，返回 200 即健康
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GH_API
+        value: https://api.github.com
+      - key: GH_REPO
+        value: AIesse/wallpapers
+      - key: GH_BRANCH
+        value: main
+      - key: CDN_BASE
+        value: https://wp.aiesse.me   # Cloudflare 代理后的域名（部署后改）
+      - key: GH_TOKEN
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: WX_APPID
+        sync: false
+      - key: WX_SECRET
+        sync: false

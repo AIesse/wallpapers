@@ -1,0 +1,47 @@
+.page { padding: 24rpx 24rpx 60rpx; }
+
+.float-back {
+  position: fixed; left: 24rpx; z-index: 100;
+  width: 72rpx; height: 72rpx; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(11, 13, 18, 0.45); border: 1rpx solid var(--glass-border);
+  -webkit-backdrop-filter: blur(16rpx) saturate(180%); backdrop-filter: blur(16rpx) saturate(180%);
+  color: var(--text); font-size: 48rpx; line-height: 1;
+}
+
+.hero { overflow: hidden; position: relative; margin-top: 96rpx; }
+.hero__img { width: 100%; display: block; background: rgba(255, 255, 255, 0.04); }
+.hero__hint {
+  position: absolute; right: 20rpx; bottom: 20rpx;
+  font-size: 20rpx; color: #fff; opacity: 0.85;
+  background: rgba(0, 0, 0, 0.35); padding: 6rpx 16rpx; border-radius: 999rpx;
+  -webkit-backdrop-filter: blur(10rpx); backdrop-filter: blur(10rpx);
+}
+
+/* 多端版本切换（磨砂） */
+.versions { display: flex; gap: 20rpx; margin: 24rpx 0; }
+.versions__tab {
+  flex: 1; padding: 22rpx 26rpx; border-radius: 20rpx;
+  background: var(--glass); border: 1rpx solid var(--glass-border);
+  -webkit-backdrop-filter: blur(20rpx); backdrop-filter: blur(20rpx);
+  display: flex; flex-direction: column; gap: 8rpx; transition: all 0.25s ease;
+}
+.versions__tab--on { border-color: transparent; background: var(--aurora); box-shadow: 0 6rpx 24rpx rgba(167, 139, 250, 0.35); }
+.versions__name { font-size: 28rpx; color: var(--text); }
+.versions__tab--on .versions__name { color: #fff; font-weight: 600; }
+.versions__desc { font-size: 20rpx; color: var(--text-sub); }
+.versions__tab--on .versions__desc { color: rgba(255, 255, 255, 0.85); }
+
+.meta { margin-bottom: 24rpx; padding: 8rpx 26rpx; }
+.meta__row { display: flex; justify-content: space-between; padding: 20rpx 0; border-bottom: 1rpx solid rgba(255, 255, 255, 0.06); }
+.meta__row:last-child { border-bottom: none; }
+.meta__label { color: var(--text-sub); }
+
+.actions { padding: 8rpx 0 60rpx; }
+.points-pill {
+  text-align: center; font-size: 22rpx; margin-bottom: 20rpx; letter-spacing: 2rpx;
+  color: #fff; padding: 14rpx 0; border-radius: 999rpx;
+  background: var(--glass); border: 1rpx solid var(--glass-border);
+  -webkit-backdrop-filter: blur(20rpx); backdrop-filter: blur(20rpx);
+}
+.actions__btn { font-size: 30rpx; }

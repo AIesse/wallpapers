@@ -1,0 +1,7 @@
+node_modules
+.env
+.git
+*.log
+wallpapers/uploads
+.DS_Store
+.workbuddy

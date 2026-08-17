@@ -1,0 +1,42 @@
+.page { padding: 0 24rpx 200rpx; }
+
+/* 用户卡 */
+.profile { display: flex; align-items: center; gap: 24rpx; padding: 32rpx; margin-top: 16rpx; }
+.profile__img { width: 108rpx; height: 108rpx; border-radius: 50%; border: 2rpx solid var(--glass-border); }
+.profile__img--ph {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--aurora); color: #fff; font-size: 48rpx;
+}
+.profile__info { flex: 1; }
+.profile__name { font-size: 32rpx; font-weight: 600; }
+.profile__sub { font-size: 22rpx; color: var(--text-sub); margin-top: 8rpx; }
+.profile__points { text-align: center; min-width: 120rpx; }
+.profile__num {
+  font-size: 48rpx; font-weight: 700;
+  background: var(--aurora); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.profile__label { font-size: 22rpx; color: var(--text-sub); letter-spacing: 4rpx; }
+
+/* 签到卡 */
+.checkin { display: flex; align-items: center; gap: 24rpx; padding: 28rpx 32rpx; margin-top: 20rpx; }
+.checkin__left { flex: 1; }
+.checkin__title { font-size: 30rpx; font-weight: 600; }
+.checkin__sub { font-size: 22rpx; color: var(--text-sub); margin-top: 10rpx; }
+.checkin__btn { flex-shrink: 0; font-size: 26rpx; padding: 0 36rpx; line-height: 76rpx; height: 76rpx; }
+
+/* 广告位 */
+.ad { margin-top: 20rpx; padding: 12rpx; overflow: hidden; }
+
+/* 下载历史 */
+.section { margin-top: 40rpx; }
+.section__title {
+  font-size: 30rpx; font-weight: 600; margin-bottom: 20rpx; letter-spacing: 2rpx;
+  display: flex; align-items: center; gap: 12rpx;
+}
+.section__title::before { content: ''; width: 6rpx; height: 28rpx; background: var(--aurora); border-radius: 3rpx; }
+.history { display: flex; flex-direction: column; gap: 16rpx; }
+.history__item { display: flex; align-items: center; gap: 20rpx; padding: 16rpx; }
+.history__img { width: 96rpx; height: 128rpx; border-radius: 12rpx; background: rgba(255, 255, 255, 0.04); flex-shrink: 0; }
+.history__meta { display: flex; flex-direction: column; gap: 8rpx; overflow: hidden; }
+.history__name { font-size: 26rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history__time { font-size: 20rpx; color: var(--text-sub); }

@@ -1,0 +1,42 @@
+<view class="page">
+  <!-- 悬浮返回 -->
+  <view class="float-back" style="top:{{statusBarHeight + 8}}px;" bindtap="onBack">‹</view>
+
+  <view wx:if="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:if="{{wp}}">
+    <!-- 壁纸预览 -->
+    <view class="hero card" bindtap="onPreview">
+      <image class="hero__img" src="{{version === 'desktop' ? wp.desktop_url : wp.mobile_url}}" mode="widthFix" />
+      <view class="hero__hint">轻触查看大图</view>
+    </view>
+
+    <!-- 多端版本切换（特色专区：手机 / 电脑双版本） -->
+    <view wx:if="{{wp.has_mobile && wp.has_desktop}}" class="versions">
+      <view class="versions__tab {{version === 'mobile' ? 'versions__tab--on' : ''}}" data-version="mobile" catchtap="onVersionTap">
+        <text class="versions__name">📱 手机版</text>
+        <text class="versions__desc">适配竖屏 · 即存即用</text>
+      </view>
+      <view class="versions__tab {{version === 'desktop' ? 'versions__tab--on' : ''}}" data-version="desktop" catchtap="onVersionTap">
+        <text class="versions__name">🖥 电脑版</text>
+        <text class="versions__desc">高清横屏 · 传输电脑使用</text>
+      </view>
+    </view>
+
+    <!-- 信息 -->
+    <view class="meta card">
+      <view class="meta__row"><text class="meta__label">标题</text><text>{{wp.title}}</text></view>
+      <view class="meta__row"><text class="meta__label">版本</text><text>{{wp.has_mobile && wp.has_desktop ? '手机 + 电脑' : (wp.has_mobile ? '手机' : '电脑')}}</text></view>
+      <view class="meta__row"><text class="meta__label">热度</text><text>{{wp.downloads}} 次下载</text></view>
+    </view>
+
+    <!-- 下载按钮 -->
+    <view class="actions">
+      <view class="points-pill">积分 {{points}} · 下载消耗 1 分</view>
+      <button class="btn-gold actions__btn {{downloading ? 'btn-disabled' : ''}}"
+              disabled="{{downloading}}" bindtap="onDownload">
+        {{downloading ? '获取中…' : '下载壁纸（-1 积分）'}}
+      </button>
+    </view>
+  </block>
+</view>

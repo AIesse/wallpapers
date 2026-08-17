@@ -1,0 +1,103 @@
+/* 全局主题：纯黑底 + 磨砂玻璃 + 多彩主题强调色（克制使用） */
+page {
+  --bg: #000000;
+  --gold: #d4b483;
+  --gold-grad: linear-gradient(135deg, #e8cfa5 0%, #d4b483 45%, #b9965f 100%);
+  /* 多彩主题强调色：仅用于激活态 / 主按钮 / 标题点缀，不铺满页面 */
+  --aurora: linear-gradient(135deg, #7dd3fc 0%, #a78bfa 38%, #f9a8d4 68%, #fcd34d 100%);
+  --text: #f3f5fb;
+  --text-sub: #9aa3bd;
+  --line: rgba(255, 255, 255, 0.10);
+  /* 磨砂玻璃（深色半透明） */
+  --glass: rgba(255, 255, 255, 0.06);
+  --glass-strong: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+  background: var(--bg);
+}
+
+/* 磨砂玻璃工具类 */
+.glass {
+  background: var(--glass);
+  border: 1rpx solid var(--glass-border);
+  -webkit-backdrop-filter: blur(30rpx) saturate(180%);
+  backdrop-filter: blur(30rpx) saturate(180%);
+}
+
+/* 多彩渐变文字（仅标题点缀） */
+.grad-text {
+  background: var(--aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 沉浸式导航栏：透明磨砂，内容透出，无硬边界 */
+.nav {
+  padding-top: env(safe-area-inset-top);
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.28);
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(20rpx) saturate(180%);
+  backdrop-filter: blur(20rpx) saturate(180%);
+}
+.nav__title {
+  font-size: 34rpx;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+  color: var(--text);
+}
+.nav__title em {
+  font-style: normal;
+  background: var(--aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 玻璃卡片 */
+.card {
+  background: var(--glass);
+  border: 1rpx solid var(--glass-border);
+  border-radius: 24rpx;
+  -webkit-backdrop-filter: blur(30rpx) saturate(180%);
+  backdrop-filter: blur(30rpx) saturate(180%);
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.35);
+}
+
+/* 主按钮：多彩主题强调 */
+.btn-gold {
+  background: var(--aurora);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 999rpx;
+  border: none;
+  line-height: 88rpx;
+  box-shadow: 0 10rpx 30rpx rgba(120, 119, 198, 0.35);
+}
+.btn-gold::after { border: none; }
+.btn-ghost {
+  background: transparent;
+  color: var(--gold);
+  border: 1rpx solid var(--gold);
+  border-radius: 999rpx;
+  line-height: 84rpx;
+}
+.btn-ghost::after { border: none; }
+.btn-disabled { opacity: 0.4; }
+
+.empty {
+  text-align: center;
+  color: var(--text-sub);
+  padding: 120rpx 0;
+  font-size: 26rpx;
+  letter-spacing: 2rpx;
+}

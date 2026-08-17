@@ -1,0 +1,62 @@
+/* 悬浮磨砂 tabbar —— 多彩极光强调 */
+.tabbar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 24rpx);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 14rpx;
+  border-radius: 999rpx;
+  background: rgba(16, 19, 26, 0.5);
+  border: 1rpx solid rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(30rpx) saturate(180%);
+  backdrop-filter: blur(30rpx) saturate(180%);
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.5);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 150rpx;
+  padding: 10rpx 30rpx;
+  border-radius: 999rpx;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tab__iconwrap {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.tab__icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+.tab__text {
+  font-size: 22rpx;
+  margin-top: 6rpx;
+  color: var(--text-sub);
+  transition: all 0.3s ease;
+}
+
+.tab--on .tab__text {
+  color: #fff;
+  font-weight: 600;
+}
+
+.tab--on .tab__iconwrap {
+  background: var(--aurora);
+  box-shadow: 0 6rpx 20rpx rgba(167, 139, 250, 0.5);
+}
