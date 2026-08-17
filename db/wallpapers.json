@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": 1,
+    "title": "闭环测试图",
+    "category": "landscape",
+    "device": "both",
+    "mobile_file": "wallpapers/1786973826670-60bdf2cf.png",
+    "desktop_file": "wallpapers/1786973830537-5e8d2697.png",
+    "downloads": 0,
+    "created_at": "2026-08-17"
+  }
+]
